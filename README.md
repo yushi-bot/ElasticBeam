@@ -1,6 +1,7 @@
 # 弹性梁模型
 # Elastic beam model project
 ![BeamModel.png](BeamModel.png)
+
 这是一个用于计算如上图所示两点受力的弹性梁模型的计算程序。
 
 This is a programme for solution of an elastic beam with load at two point, as shown in fig above.
