@@ -6,8 +6,7 @@ Newton-Lawson method was adopted to calculate loading force.
 from EIBeam import *
 import numpy as np
 import math
-
-
+from tqdm import tqdm
 
 
 def calcBC1Error(beam:EIBeam, r:float):
@@ -56,20 +55,6 @@ def calcDerivativeMatrix(beam:EIBeam, BC1, BC2, r, phi):
 
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
-    """
-    L = 0.3  # 30 cm
-    E = 210e9 # steel
-    b = 0.03 # 3cm
-    h = 0.002 # 2mm
-    I = 0.5 * b * h * h * h
-    P0 = -10      # initial load
-    L1 = 0.25   # position
-    F0 = 10      # initial load
-
-    r = 0.03 # 30mm
-    phi = math.atan(0.285)
-    tol = 1e-2  # 1%
-    """
     L = 0.4  # 40 cm
     E = 210e9  # steel
     b = 0.03  # 3cm
@@ -85,45 +70,51 @@ if __name__ == '__main__':
 
     BC1tol = r * tol
     BC2tol = math.fabs(phi) * tol
+    
+    ls = np.linspace(L-L1+0.01, L, 100)
+    ls = [np.round(l,3) for l in ls]
+    ls = ls[::-1]
+    
+    for L in tqdm(ls, desc="Calculating deflection", unit="step"):
+        dx = L * 0.0001  # Step size along length
+        # initialize the beam object
+        beam = EIBeam(length=L, modulus=E, inertia=I)
+        beam.setLoadPosition(L1)
+        beam.setLoad(endLoad=P0, midLoad=F0)
+        beam.discrete(dx)
+        beam.calcDeflection(formulation=LARGE_DEFORMATION)
 
-
-    dx = L * 0.0001  # Step size along length
-
-    # initialize the beam object
-    beam = EIBeam(length=L, modulus=E, inertia=I)
-    beam.setLoadPosition(L1)
-    beam.setLoad(endLoad=P0, midLoad=F0)
-    beam.discrete(dx)
-    beam.calcDeflection(formulation=LARGE_DEFORMATION)
-
-    BC1error = calcBC1Error(beam, r)
-    BC2error = calcBC2Error(beam, phi)
-    P = P0
-    F = F0
-
-    # calculate P and F with Newton-Lawson method
-    while not( -BC1tol<BC1error<BC1tol and -BC2tol<BC2error<BC2tol):
-
-        # calculate derivative
-        derivativeMatrix = calcDerivativeMatrix(beam, BC1error, BC2error, r, phi)
-        errorMatrix = np.array([[BC1error],
-                               [BC2error]])
-        derivative_inv = np.linalg.inv(derivativeMatrix)
-        dForceMatrix = np.linalg.matmul( derivative_inv,errorMatrix)
-
-        dp = dForceMatrix[0][0]
-        df = dForceMatrix[1][0]
-
-        P = P-dp
-        F = F-df
-        beam = beam.copyBeamWithDiffLoad(P,F)
-        beam.calcDeflection()
         BC1error = calcBC1Error(beam, r)
         BC2error = calcBC2Error(beam, phi)
+        P = P0
+        F = F0
 
-    print("P = %.4f" % P, "F = %.4f" % F)
-    beam.plot()
+        # calculate P and F with Newton-Lawson method
+        while not( -BC1tol<BC1error<BC1tol and -BC2tol<BC2error<BC2tol):
 
+            # calculate derivative
+            derivativeMatrix = calcDerivativeMatrix(beam, BC1error, BC2error, r, phi)
+            errorMatrix = np.array([[BC1error],
+                                [BC2error]])
+            derivative_inv = np.linalg.inv(derivativeMatrix)
+            dForceMatrix = np.linalg.matmul( derivative_inv,errorMatrix)
 
+            dp = dForceMatrix[0][0]
+            df = dForceMatrix[1][0]
+
+            P = P-dp
+            F = F-df
+            beam = beam.copyBeamWithDiffLoad(P,F)
+            beam.calcDeflection()
+            BC1error = calcBC1Error(beam, r)
+            BC2error = calcBC2Error(beam, phi)
+
+        
+        # beam.plot()
+        # print(beam.w)
+        if all(beam.w>=0):
+            print("L = %.4f" % L, "P = %.4f" % P, "F = %.4f" % F)
+            beam.plot()
+            break
 
 
