@@ -70,16 +70,16 @@ if __name__ == '__main__':
     phi = math.atan(0.285)
     tol = 1e-2  # 1%
     """
-    L = 0.4  # 40 cm
+    L = 0.2  # 40 cm
     E = 210e9  # steel
     b = 0.03  # 3cm
-    h = 0.0008  # 0.8mm
+    h = 0.001  # 0.8mm
     I = 1/12 * b * h * h * h
     P0 = -10  # initial load
-    L1 = 0.35  # position
+    L1 = 0.15  # position
     F0 = 10  # initial load
 
-    r = 0.025  # 25mm
+    r = 0.02  # 25mm
     phi = math.atan(0.285)
     tol = 1e-2  # 1%
 
@@ -124,6 +124,10 @@ if __name__ == '__main__':
     print("P = %.4f" % P, "F = %.4f" % F)
     beam.plot()
 
+    with open("./res.csv","w+") as csv:
+        for i in range(len(beam.w)):
+            csv.write("%.8lf, %.8lf" % (beam.x[i], beam.w[i]))
+            csv.write("\n")
 
 
 

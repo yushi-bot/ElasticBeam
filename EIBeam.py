@@ -135,21 +135,71 @@ class EIBeam:
         """
         return M / self.E / self.I
 
-    def calcDeflection(self, formulation=LARGE_DEFORMATION):
+    def calcDeflectionWithM(self, formulation=LARGE_DEFORMATION):
         n = len(self.x)
-        for i in range(n - 1): # Newmark-beta method, gamma = 0.5, beta = 0.25
-            dx = self.x[i+1]- self.x[i]
+        for i in range(n - 1):  # Newmark-beta method, gamma = 0.5, beta = 0.25
+            dx = self.x[i + 1] - self.x[i]
             dw_i = self.dw[i]
-            ddw_i0 = self.calcDDW(self.M[i],dw_i,formulation)
+            ddw_i0 = self.calcDDW(self.M[i], dw_i, formulation)
 
             dw_i1 = dw_i + ddw_i0 * dx
-            ddw_i1 = self.calcDDW(self.M[i+1], dw_i1, formulation)
+            ddw_i1 = self.calcDDW(self.M[i + 1], dw_i1, formulation)
             dw_i2 = dw_i + ddw_i1 * dx
 
             self.ddw[i] = ddw_i0
-            self.dw[i + 1] = (dw_i1 + dw_i2)/2
-            self.w[i+1] = self.w[i] + self.dw[i] * dx + (ddw_i0 + ddw_i1) * 0.25 * dx * dx
+            self.dw[i + 1] = (dw_i1 + dw_i2) / 2
+            self.w[i + 1] = self.w[i] + self.dw[i] * dx + (ddw_i0 + ddw_i1) * 0.25 * dx * dx
         self.theta = np.asin(self.dw)
+
+
+    def calcDeflection(self, formulation=LARGE_DEFORMATION):
+        self.calcDeflectionWithM(formulation)
+        M = np.copy(self.M)
+        tol = 1e-2
+        M_max = np.max(M)
+        M_min = np.min(M)
+        M2 = self.modifyMWithTheta()
+        if  math.fabs(M_max) > math.fabs(M_min):
+            M2_max = np.max(M2)
+            err = M2_max - M_max
+            errTol = tol*math.fabs(M_max)
+        else:
+            M2_min = np.min(M2)
+            err = M2_min - M_min
+            errTol = tol * math.fabs(M_min)
+
+        while not( -errTol < err < errTol):
+            #break
+            self.calcDeflectionWithM(formulation)
+            M = np.copy(self.M)
+            tol = 1e-2
+            M_max = np.max(M)
+            M_min = np.min(M)
+            M2 = self.modifyMWithTheta()
+            if math.fabs(M_max) > math.fabs(M_min):
+                M2_max = np.max(M2)
+                err = M2_max - M_max
+                errTol = tol * math.fabs(M_max)
+            else:
+                M2_min = np.min(M2)
+                err = M2_min - M_min
+                errTol = tol * math.fabs(M_min)
+
+
+
+
+    def modifyMWithTheta(self):
+        n = len(self.x)
+        self.M[-1] = 0
+        for i in range(1,n):
+            t = n-i
+            dx = self.x[t] - self.x[t-1]
+            dx *= math.cos(self.theta[t-1])
+            self.M[t-1] = self.M[t] + self.P * dx
+            if self.x[t-1] < self.L1:
+                self.M[t-1] += self.F * dx
+
+        return self.M
 
 
     def plot(self):
@@ -198,6 +248,15 @@ if __name__ == "__main__":
     P = 400000.0  # End compressive load (N)
     F = -1200000  # mid load
     L1 = 0.5  # mid position
+
+    L = 0.2  # 40 cm
+    E = 210e9  # steel
+    b = 0.03  # 3cm
+    h = 0.001  # 0.8mm
+    I = 1 / 12 * b * h * h * h
+    P = 0  # initial load
+    L1 = 0.15  # position
+    F = -30  # initial load
 
     dx = L * 0.0001  # Step size along length
 
