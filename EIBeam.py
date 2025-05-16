@@ -124,7 +124,7 @@ class EIBeam:
         :param dw: 1 order derivative of w
         :return: ddw: 2 order derivative of w
         """
-        return M / self.E / self.I *math.pow((1 + dw) * (1 + dw), 1.5)
+        return M / self.E / self.I *math.pow(1 + dw * dw, 1.5)
 
     def calcDDwSmall(self, M, dw): # small deformation equations
         """

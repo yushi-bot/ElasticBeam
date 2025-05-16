@@ -74,7 +74,7 @@ if __name__ == '__main__':
     E = 210e9  # steel
     b = 0.03  # 3cm
     h = 0.0008  # 0.8mm
-    I = 0.5 * b * h * h * h
+    I = 1/12 * b * h * h * h
     P0 = -10  # initial load
     L1 = 0.35  # position
     F0 = 10  # initial load
